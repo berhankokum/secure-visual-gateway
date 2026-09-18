@@ -92,5 +92,3 @@ Desktop.ini
 
 *.log
 
-# Local ESP32-CAM programming bridge
-/tools/deneyap_uart_bridge/

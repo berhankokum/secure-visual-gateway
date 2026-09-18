@@ -1,0 +1,3 @@
+[submodule "tools/deneyap_uart_bridge"]
+	path = tools/deneyap_uart_bridge
+	url = https://github.com/berhankokum/deneyap-esp32cam-uart-bridge.git
