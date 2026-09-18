@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+
+jobs:
+
+  # ==========================================================
+  # Python Tests
+  # ==========================================================
+
+  python-tests:
+    name: Python Tests
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+
+        with:
+          python-version: "3.13"
+          cache: "pip"
+
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r backend/requirements.txt
+          python -m pip install -r tests/requirements.txt
+
+
+      - name: Run tests
+        run: |
+          python -m pytest
+
+
+  # ==========================================================
+  # Dashboard
+  # ==========================================================
+
+  dashboard-build:
+    name: Dashboard Build
+
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: dashboard
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: dashboard/package-lock.json
+
+
+      - name: Install dependencies
+        run: npm ci
+
+
+      - name: Build dashboard
+        run: npm run build
+
+
+  # ==========================================================
+  # ESP-IDF Firmware
+  # ==========================================================
+
+  firmware-build:
+    name: Firmware - ${{ matrix.name }}
+
+    runs-on: ubuntu-latest
+
+
+    strategy:
+      fail-fast: false
+
+      matrix:
+        include:
+          - name: Camera Node
+            path: firmware/camera_node
+
+          - name: Gateway
+            path: firmware/gateway
+
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+
+      # ------------------------------------------------------
+      # Real secrets are intentionally not stored in Git.
+      #
+      # CI generates temporary random development keys only
+      # so the firmware can be compiled.
+      # ------------------------------------------------------
+
+      - name: Generate temporary development secrets
+        run: |
+          python3 tools/generate_secrets.py
+
+
+      - name: Build ESP-IDF project
+        uses: espressif/esp-idf-ci-action@v1
+
+        with:
+          esp_idf_version: v6.1
+          target: esp32
+          path: ${{ matrix.path }}
