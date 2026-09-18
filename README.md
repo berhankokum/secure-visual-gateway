@@ -1,5 +1,7 @@
 # Secure Visual Gateway
 
+[![CI](https://github.com/berhankokum/secure-visual-gateway/actions/workflows/ci.yml/badge.svg)](https://github.com/berhankokum/secure-visual-gateway/actions/workflows/ci.yml)
+
 Secure Visual Gateway is an embedded visual telemetry system built with ESP32-based devices.
 
 An ESP32-CAM captures images and sends them wirelessly to a gateway using a custom secure protocol over ESP-NOW. The gateway reconstructs the image and forwards it to a PC, where a Python receiver sends the data to a FastAPI backend. A React + TypeScript dashboard displays live images and device telemetry.
@@ -81,6 +83,8 @@ React + TypeScript Dashboard
 - FastAPI REST API
 - SQLite metadata storage
 - React + TypeScript monitoring dashboard
+- Automated backend and protocol tests
+- GitHub Actions CI for backend, dashboard and firmware builds
 
 ---
 
@@ -137,9 +141,27 @@ secure-visual-gateway/
 |
 +-- docs/
 |
++-- tests/
+|
++-- .github/
+|   +-- workflows/
+|       +-- ci.yml
+|
 +-- .gitignore
++-- pytest.ini
++-- LICENSE
 +-- README.md
 ```
+
+The Deneyap ESP32-CAM UART programming bridge used during development is intentionally excluded from this repository and can be maintained as a separate reusable project.
+
+---
+
+## Dashboard
+
+![Secure Visual Gateway Dashboard](docs/images/dashboard.png)
+
+The dashboard shows the latest received frame together with live device and backend telemetry.
 
 ---
 
@@ -199,7 +221,7 @@ is intentionally excluded from Git.
 
 The tracked file `sgp_secrets.example.h` contains placeholders only.
 
-> This project currently uses locally provisioned pre-shared secrets. Production deployments should use hardware-backed key storage or a secure provisioning process.
+> The generated header being excluded from Git provides repository secret hygiene only; it is not hardware-backed key protection. Production deployments should use secure provisioning and protected key storage.
 
 ---
 
@@ -534,6 +556,35 @@ Telemetry is encrypted using the same secure SGP session.
 
 ---
 
+## Automated Tests
+
+The repository includes backend API and SGP protocol contract tests.
+
+Run from the repository root:
+
+```powershell
+python -m pytest
+```
+
+Current suite: **20 tests** covering backend image/telemetry flows, duplicate handling, invalid-input rejection, SGP header layout, big-endian encoding, message types, image constants and telemetry constants.
+
+---
+
+## Continuous Integration
+
+GitHub Actions runs automatically on pushes and pull requests to `main`. The CI pipeline validates:
+
+```text
+Python Tests
+Dashboard Build
+Firmware - Camera Node
+Firmware - Gateway
+```
+
+Firmware jobs build against ESP-IDF 6.1 for the ESP32 target. CI generates temporary development secrets during the runner lifetime so real runtime secrets do not need to be stored in Git.
+
+---
+
 ## Current Limitations
 
 - Camera resolution is currently QVGA (320x240).
@@ -543,6 +594,8 @@ Telemetry is encrypted using the same secure SGP session.
 - The backend currently targets local development.
 - Device firmware updates are performed manually.
 - The dashboard currently uses HTTP polling rather than WebSocket/SSE streaming.
+- The current protocol uses a 32-bit session ID and is intended as a prototype rather than a production provisioning design.
+- The current implementation targets one Camera Node / Gateway pair.
 
 ---
 
@@ -603,3 +656,9 @@ Device Telemetry
 React Dashboard
     ✓
 ```
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [`LICENSE`](LICENSE).
